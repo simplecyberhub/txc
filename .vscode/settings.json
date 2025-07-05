@@ -1,0 +1,34 @@
+{
+    "sqltools.connections": [
+        {
+            "previewLimit": 50,
+            "server": "localhost",
+            "driver": "PostgreSQL",
+            "connectString": "pgsql://postgres:root@localhost:5432/tradexcapital",
+            "name": "pgsql"
+        },
+        {
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 5432,
+            "askForPassword": true,
+            "driver": "PostgreSQL",
+            "name": "pgsql",
+            "database": "tradexcapital",
+            "username": "postgres"
+        },
+        {
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 5432,
+            "askForPassword": true,
+            "driver": "PostgreSQL",
+            "name": "postgresql",
+            "database": "tradexx",
+            "username": "postgres"
+        }
+    ],
+    "inlineChat.lineEmptyHint": true,
+    "inlineChat.finishOnType": true,
+    "accessibility.voice.keywordActivation": "off"
+}
