@@ -94,7 +94,7 @@ app.get("*", (req, res, next) => {
   server.listen(
     {
       port,
-      host: "127.0.0.1", // Bind to localhost
+      host: "0.0.0.0", // Bind to localhost
       reusePort: false,
     },
     () => {
