@@ -157,44 +157,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // API Routes
 
   // Authentication routes
- app.post("/api/auth/register", async (req, res) => {
-  try {
-    const userData = insertUserSchema.parse(req.body);
+  app.post("/api/auth/register", async (req, res) => {
+    try {
+      const userData = insertUserSchema.parse(req.body);
 
-    const existingUser = await storage.getUserByUsername(userData.username);
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: "Username already exists",
+      // Check if user already exists
+      const existingUser = await storage.getUserByUsername(userData.username);
+      if (existingUser) {
+        return res.status(400).json({
+          success: false,
+          message: "Username already exists",
+        });
+      }
+
+      const existingEmail = await storage.getUserByEmail(userData.email);
+      if (existingEmail) {
+        return res.status(400).json({
+          success: false,
+          message: "Email already exists",
+        });
+      }
+
+      // Generate verification token
+      const verificationToken = generateToken();
+
+      // Pass the token to createUser
+      const user = await storage.createUser({
+        ...userData,
+        verificationToken
       });
+
+      // Send verification email with the same token
+      await sendVerificationEmail(user.email, verificationToken);
+
+      res.status(201).json({ success: true, message: "Registration successful. Please verify your email." });
+    } catch (error) {
+      res.status(400).json({ success: false, message: "Registration failed." });
     }
-
-    const existingEmail = await storage.getUserByEmail(userData.email);
-    if (existingEmail) {
-      return res.status(400).json({
-        success: false,
-        message: "Email already exists",
-      });
-    }
-
-    const verificationToken = generateToken();
-    const user = await storage.createUser({
-      ...userData,
-      verificationToken
-    });
-
-    await sendVerificationEmail(user.email, verificationToken);
-
-    res.status(201).json({ success: true, message: "Registration successful. Please verify your email." });
-  } catch (error) {
-    console.error('Registration error:', error); // <-- KEY LINE
-    res.status(400).json({ 
-      success: false, 
-      message: error?.message || "Registration failed.",
-      // error, // Optionally: include error object for debugging
-    });
-  }
-});
+  });
 
   app.post("/api/auth/login", async (req, res) => {
     try {
@@ -227,12 +227,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       delete userResponse.password;
       delete userResponse.verificationToken;
 
-      req.session.user = userResponse;
-
-      return res.json({
-        success: true,
-        message: "Login successful",
-        user: userResponse,
+      req.login(userResponse, (err) => {
+        if (err) {
+          return res.status(500).json({
+            success: false,
+            message: "Failed to login (session error)",
+          });
+        }
+        return res.json({
+          success: true,
+          message: "Login successful",
+          user: userResponse,
+        });
       });
     } catch (error) {
       console.error("Login error:", error);
@@ -282,8 +288,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Set both flags
-      await storage.updateUser(user.id, { isEmailVerified: true, isVerified: true, verificationToken: null });
+      // Only set email verified flag (KYC will set isVerified)
+      await storage.updateUser(user.id, { isEmailVerified: true, verificationToken: null });
 
       res.json({
         success: true,

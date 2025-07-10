@@ -8,13 +8,24 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, CheckCircle, AlertCircle, Clock } from "lucide-react";
+import styles from "./KYCVerification.module.css";
 
 export default function KYCVerification() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("status");
   
+  // Define the expected KYC status shape
+  type KYCStatusResponse = {
+    kyc?: {
+      status?: "none" | "pending" | "approved" | "rejected";
+      createdAt?: string;
+      updatedAt?: string;
+      rejectionReason?: string;
+    };
+  };
+
   // Fetch KYC status
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error } = useQuery<KYCStatusResponse>({
     queryKey: ['/api/kyc/status'],
   });
   
@@ -55,21 +66,24 @@ export default function KYCVerification() {
         </div>
       );
     }
-    
     if (kycStatus === "pending") {
       return (
-        <div className="flex flex-col items-center justify-center py-8">
-          <Clock className="h-12 w-12 text-yellow-500 mb-4" />
-          <h2 className="text-xl font-semibold mb-2">KYC In Review</h2>
-          <Badge className="bg-yellow-100 text-yellow-800 mb-4">Pending</Badge>
-          <p className="text-gray-600 mb-6 text-center">
-            Your KYC verification is currently under review. This process typically takes 24-48 hours.
-          </p>
-          <div className="w-full max-w-sm bg-gray-100 rounded-full h-2.5 mb-4 overflow-hidden">
-            <div className="bg-yellow-500 h-2.5 rounded-full" style={{ width: '50%' }}></div>
+        <>
+          <div className="flex flex-col items-center justify-center py-8">
+            <Clock className="h-12 w-12 text-yellow-500 mb-4" />
+            <h2 className="text-xl font-semibold mb-2">KYC In Review</h2>
+            <Badge className="bg-yellow-100 text-yellow-800 mb-4">Pending</Badge>
+            <p className="text-gray-600 mb-6 text-center">
+              Your KYC verification is currently under review. This process typically takes 24-48 hours.
+            </p>
+            <div className="w-full max-w-sm bg-gray-100 rounded-full h-2.5 mb-4 overflow-hidden">
+              <div className="bg-yellow-500 h-2.5 rounded-full kyc-progress-bar"></div>
+            </div>
+            <p className="text-sm text-gray-500">
+              Submitted on: {data?.kyc?.createdAt ? new Date(data.kyc.createdAt).toLocaleDateString() : "N/A"}
+            </p>
           </div>
-          <p className="text-sm text-gray-500">Submitted on: {new Date(data?.kyc?.createdAt).toLocaleDateString()}</p>
-        </div>
+        </>
       );
     }
     
@@ -83,9 +97,11 @@ export default function KYCVerification() {
             Your identity has been successfully verified. You now have full access to all platform features.
           </p>
           <div className="w-full max-w-sm bg-gray-100 rounded-full h-2.5 mb-4 overflow-hidden">
-            <div className="bg-green-500 h-2.5 rounded-full" style={{ width: '100%' }}></div>
+            <div className="bg-green-500 h-2.5 rounded-full w-full"></div>
           </div>
-          <p className="text-sm text-gray-500">Verified on: {new Date(data?.kyc?.updatedAt).toLocaleDateString()}</p>
+          <p className="text-sm text-gray-500">
+            Verified on: {data?.kyc?.updatedAt ? new Date(data.kyc.updatedAt).toLocaleDateString() : "N/A"}
+          </p>
         </div>
       );
     }

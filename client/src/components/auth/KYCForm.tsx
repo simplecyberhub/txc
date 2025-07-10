@@ -163,6 +163,8 @@ export default function KYCForm() {
               className="hidden"
               accept=".jpg,.jpeg,.png,.pdf"
               onChange={handleFileChange}
+              title="Upload your document file"
+              placeholder="Select a document file"
             />
             <UploadCloud className="h-10 w-10 text-gray-400 mb-2" />
             {selectedFile ? (

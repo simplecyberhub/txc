@@ -107,7 +107,12 @@ export default function Sidebar({ admin = false }: SidebarProps) {
           </Link>
           
           {isMobile && (
-            <button onClick={toggleSidebar} className="text-white md:hidden">
+            <button 
+              onClick={toggleSidebar} 
+              className="text-white md:hidden"
+              aria-label="Close sidebar"
+              title="Close sidebar"
+            >
               <XIcon className="h-6 w-6" />
             </button>
           )}

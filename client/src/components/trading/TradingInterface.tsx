@@ -56,6 +56,8 @@ const tradeSchema = z.object({
 
 type TradeFormData = z.infer<typeof tradeSchema>;
 
+type StockSymbol = keyof typeof AVAILABLE_STOCKS;
+
 const AVAILABLE_STOCKS = {
   'AAPL': { name: 'Apple Inc.', price: 182.63, change: 1.25 },
   'GOOGL': { name: 'Alphabet Inc.', price: 138.21, change: -0.45 },
@@ -79,17 +81,30 @@ export default function TradingInterface({ symbol = "AAPL" }: TradingInterfacePr
   const [stock, setStock] = useState<any>(null);
   const [chartData, setChartData] = useState<any[]>([]);
 
+  // Define the wallet data type
+  interface WalletData {
+    wallet?: {
+      balance: number;
+      [key: string]: any;
+    };
+    [key: string]: any;
+  }
+
   // Fetch wallet data
-  const { data: walletData } = useQuery({
+  const { data: walletData } = useQuery<WalletData>({
     queryKey: ['/api/wallet'],
   });
 
-  const walletBalance = walletData?.wallet?.balance || 0;
+  // Extract wallet balance, default to 0 if not available
+  const walletBalance = walletData?.wallet?.balance ?? 0;
 
   useEffect(() => {
     // Get stock data for the symbol
-    const stockData = AVAILABLE_STOCKS[symbol] || AVAILABLE_STOCKS['AAPL'];
-    setStock(stockData);
+    const stockKey = (Object.keys(AVAILABLE_STOCKS) as StockSymbol[]).includes(symbol as StockSymbol)
+      ? (symbol as StockSymbol)
+      : 'AAPL';
+    const stockData = AVAILABLE_STOCKS[stockKey];
+    setStock({ ...stockData, symbol: stockKey });
 
     // Generate chart data
     const data = generateHistoricalData(30, stockData.price);
@@ -526,7 +541,7 @@ export default function TradingInterface({ symbol = "AAPL" }: TradingInterfacePr
                     <Button
                       type="submit"
                       className="w-full bg-primary text-white"
-                      disabled={!values.symbol}
+                      disabled={!form.watch("assetSymbol")}
                     >
                       {isSubmitting ? (
                         <>

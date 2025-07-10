@@ -133,8 +133,16 @@ export default function Profile() {
     }
   });
   
+  // Define the expected KYC data type
+  type KycStatusResponse = {
+    kyc?: {
+      status: "approved" | "pending" | "rejected" | string;
+      [key: string]: any;
+    };
+  };
+  
   // Fetch KYC status
-  const { data: kycData } = useQuery({
+  const { data: kycData } = useQuery<KycStatusResponse>({
     queryKey: ['/api/kyc/status'],
     // If 404, it means the user hasn't submitted KYC yet
     retry: (failureCount, error: any) => {
@@ -142,6 +150,7 @@ export default function Profile() {
     },
   });
   
+  // KYC status: 'approved', 'pending', 'rejected', or 'none'
   const kycStatus = kycData?.kyc?.status || "none";
   
   // Handle form submissions
@@ -194,9 +203,14 @@ export default function Profile() {
                       Admin
                     </Badge>
                   )}
-                  {user?.isVerified ? (
+                  {/* Show KYC badge based on actual KYC status */}
+                  {kycStatus === "approved" ? (
                     <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
                       Verified
+                    </Badge>
+                  ) : kycStatus === "pending" ? (
+                    <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">
+                      Pending
                     </Badge>
                   ) : (
                     <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">
@@ -451,9 +465,13 @@ export default function Profile() {
                     <div className="flex items-center justify-between p-4 border rounded-md">
                       <div className="flex items-center">
                         <div className="mr-4">
-                          {user?.isVerified ? (
+                          {kycStatus === "approved" ? (
                             <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
                               <Check className="h-6 w-6 text-green-600" />
+                            </div>
+                          ) : kycStatus === "pending" ? (
+                            <div className="h-10 w-10 rounded-full bg-yellow-100 flex items-center justify-center">
+                              <Loader2 className="h-6 w-6 text-yellow-600 animate-spin" />
                             </div>
                           ) : (
                             <div className="h-10 w-10 rounded-full bg-yellow-100 flex items-center justify-center">
@@ -467,7 +485,7 @@ export default function Profile() {
                         </div>
                       </div>
                       <div>
-                        {user?.isVerified ? (
+                        {kycStatus === "approved" ? (
                           <Badge className="bg-green-100 text-green-800">Verified</Badge>
                         ) : kycStatus === "pending" ? (
                           <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>

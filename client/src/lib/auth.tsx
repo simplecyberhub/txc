@@ -49,15 +49,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
 
   // Get current user
-  const { isLoading, data } = useQuery({
+  const { isLoading, data } = useQuery<{ user: User | null }>({
     queryKey: ["/api/auth/me"],
-    queryFn: getQueryFn({ on401: "returnNull" }),
+    queryFn: getQueryFn<{ user: User | null }>({ on401: "returnNull" }),
     retry: false,
   });
 
+  // Debug: log /me response and user state
   useEffect(() => {
-    if (data?.user) {
+    console.log("[Auth] /api/auth/me response:", data);
+    console.log("[Auth] Current user state:", user);
+    if (data?.user && !user) {
       setUser(data.user);
+      console.log("[Auth] Set user from /me:", data.user);
+    }
+    // If /me returns null and user is set, clear user (e.g., after logout or session expired)
+    if (data?.user === null && user) {
+      setUser(null);
+      console.log("[Auth] Cleared user due to /me null");
     }
   }, [data]);
 
@@ -77,8 +86,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return res.json();
     },
     onSuccess: (data) => {
+      console.log("[Auth] Login mutation success:", data);
       if (data.success) {
         setUser(data.user);
+        console.log("[Auth] Set user after login:", data.user);
         queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
         toast({
           title: "Login Successful",
@@ -222,15 +233,20 @@ export function useAuth() {
 }
 
 // Helper function for auth queries
-function getQueryFn<T>({ on401 }: { on401: "returnNull" | "throw" }) {
-  return async ({ queryKey }: { queryKey: string[] }): Promise<T | null> => {
+function getQueryFn<T extends object>({ on401 }: { on401: "returnNull" | "throw" }) {
+  return async ({
+    queryKey,
+  }: {
+    queryKey: readonly unknown[];
+  }): Promise<T> => {
     try {
-      const res = await fetch(queryKey[0], {
+      const res = await fetch(queryKey[0] as string, {
         credentials: "include",
       });
 
       if (on401 === "returnNull" && res.status === 401) {
-        return null;
+        // Always return an object with user: null for this API
+        return { user: null } as T;
       }
 
       if (!res.ok) {
@@ -241,7 +257,7 @@ function getQueryFn<T>({ on401 }: { on401: "returnNull" | "throw" }) {
       return await res.json();
     } catch (error) {
       if (on401 === "returnNull") {
-        return null;
+        return { user: null } as T;
       }
       throw error;
     }
